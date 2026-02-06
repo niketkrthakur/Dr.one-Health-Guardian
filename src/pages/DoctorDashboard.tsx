@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import QuickAccessCard from "@/components/dashboard/QuickAccessCard";
 import RefillRequestsManager from "@/components/doctor/RefillRequestsManager";
+import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import { 
   User, 
   QrCode, 
   Stethoscope, 
   LogOut,
-  Brain,
   ClipboardList,
   Shield,
   Camera
@@ -140,15 +140,7 @@ const DoctorDashboard = () => {
         </Button>
 
         {/* AI Disclaimer */}
-        <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-          <div className="flex items-start gap-3">
-            <Brain className="h-5 w-5 text-primary mt-0.5" />
-            <p className="text-xs">
-              <strong>AI Disclaimer:</strong> AI insights are assistive only. 
-              Final medical decisions remain with qualified healthcare professionals.
-            </p>
-          </div>
-        </div>
+        <SafetyDisclaimer variant="ai" />
       </div>
 
       <QRScannerDialog

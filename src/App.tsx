@@ -16,6 +16,7 @@ import Reminders from "./pages/Reminders";
 import AISummary from "./pages/AISummary";
 import EmergencyQR from "./pages/EmergencyQR";
 import DoctorAccess from "./pages/DoctorAccess";
+import DoctorFinder from "./pages/DoctorFinder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -114,6 +115,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/doctor-finder" 
+              element={
+                <ProtectedRoute>
+                  <DoctorFinder />
                 </ProtectedRoute>
               } 
             />

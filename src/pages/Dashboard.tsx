@@ -4,7 +4,8 @@ import AppLayout from "@/components/layout/AppLayout";
 import PatientCard from "@/components/dashboard/PatientCard";
 import QuickAccessCard from "@/components/dashboard/QuickAccessCard";
 import AlertBanner from "@/components/dashboard/AlertBanner";
-import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut } from "lucide-react";
+import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut, Search } from "lucide-react";
+import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -105,12 +106,7 @@ const Dashboard = () => {
           </Button>
 
           {/* AI Disclaimer */}
-          <div className="bg-muted/50 rounded-xl p-4 border border-border/50">
-            <p className="text-xs text-muted-foreground text-center">
-              <span className="font-medium">AI Disclaimer:</span> AI features are assistive only. 
-              Final medical decisions remain with qualified healthcare professionals.
-            </p>
-          </div>
+          <SafetyDisclaimer variant="ai" />
         </div>
       </AppLayout>
     );
@@ -188,6 +184,13 @@ const Dashboard = () => {
               path="/emergency"
               variant="emergency"
             />
+            
+            <QuickAccessCard
+              icon={Search}
+              title="Find a Doctor"
+              description="Healthcare navigation by condition"
+              path="/doctor-finder"
+            />
           </div>
         </div>
 
@@ -202,12 +205,7 @@ const Dashboard = () => {
         </Button>
 
         {/* AI Disclaimer */}
-        <div className="bg-muted/50 rounded-xl p-4 border border-border/50">
-          <p className="text-xs text-muted-foreground text-center">
-            <span className="font-medium">AI Disclaimer:</span> AI features are assistive only. 
-            Final medical decisions remain with qualified healthcare professionals.
-          </p>
-        </div>
+        <SafetyDisclaimer variant="ai" />
       </div>
     </AppLayout>
   );
