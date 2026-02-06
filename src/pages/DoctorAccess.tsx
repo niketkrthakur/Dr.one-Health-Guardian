@@ -6,12 +6,15 @@ import { usePrescriptions } from "@/hooks/usePrescriptions";
 import { supabase } from "@/integrations/supabase/client";
 import AppLayout from "@/components/layout/AppLayout";
 import PatientAISummary from "@/components/doctor/PatientAISummary";
+import PrescriptionDriftAnalysis from "@/components/doctor/PrescriptionDriftAnalysis";
+import WearableDataCard from "@/components/wearable/WearableDataCard";
 import ManualPrescriptionDialog from "@/components/prescriptions/ManualPrescriptionDialog";
+import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  User, 
+import {
+  User,
   Clock,
   Shield,
   Pill,
@@ -19,10 +22,12 @@ import {
   CheckCircle,
   Brain,
   FileText,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Profile } from "@/hooks/useProfile";
+import { MedicalRecord } from "@/hooks/useMedicalHistory";
+import { useWearableData } from "@/hooks/useWearableData";
 
 interface Prescription {
   id: string;
@@ -34,20 +39,12 @@ interface Prescription {
   file_url: string | null;
 }
 
-interface MedicalRecord {
-  id: string;
-  title: string;
-  description: string | null;
-  record_type: string;
-  date_recorded: string;
-}
-
 const DoctorAccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, userRole, loading: authLoading } = useAuth();
   const { validateToken, useToken } = useAccessToken();
-  
+
   const [loading, setLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
   const [patientId, setPatientId] = useState<string | null>(null);
@@ -57,51 +54,52 @@ const DoctorAccess = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
 
   const { prescriptions } = usePrescriptions(patientId || undefined);
+  const { readings: wearableReadings } = useWearableData(patientId || undefined);
 
-  const validateAccess = useCallback(async (token: string) => {
-    const result = await validateToken(token);
-    
-    if (!result.valid || !result.patientId) {
-      toast.error("Access token expired or invalid");
-      navigate("/doctor-dashboard");
-      return;
-    }
+  const validateAccess = useCallback(
+    async (token: string) => {
+      const result = await validateToken(token);
 
-    setIsValid(true);
-    setPatientId(result.patientId);
-    setExpiresAt(result.expiresAt || null);
+      if (!result.valid || !result.patientId) {
+        toast.error("Access token expired or invalid");
+        navigate("/doctor-dashboard");
+        return;
+      }
 
-    // Mark token as used
-    await useToken(token);
+      setIsValid(true);
+      setPatientId(result.patientId);
+      setExpiresAt(result.expiresAt || null);
 
-    // Fetch patient profile
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", result.patientId)
-      .maybeSingle();
+      await useToken(token);
 
-    if (profileData) {
-      setPatient(profileData as Profile);
-    }
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", result.patientId)
+        .maybeSingle();
 
-    // Fetch medical history
-    const { data: historyData } = await supabase
-      .from("medical_history")
-      .select("*")
-      .eq("patient_id", result.patientId)
-      .order("date_recorded", { ascending: false });
+      if (profileData) {
+        setPatient(profileData as Profile);
+      }
 
-    if (historyData) {
-      setMedicalRecords(historyData);
-    }
+      const { data: historyData } = await supabase
+        .from("medical_history")
+        .select("*")
+        .eq("patient_id", result.patientId)
+        .order("date_recorded", { ascending: false });
 
-    setLoading(false);
-  }, [validateToken, useToken, navigate]);
+      if (historyData) {
+        setMedicalRecords(historyData as MedicalRecord[]);
+      }
+
+      setLoading(false);
+    },
+    [validateToken, useToken, navigate]
+  );
 
   useEffect(() => {
     if (authLoading) return;
-    
+
     const token = searchParams.get("token");
     if (!token) {
       toast.error("Invalid access link");
@@ -143,17 +141,30 @@ const DoctorAccess = () => {
     );
   }
 
-  const timeRemaining = expiresAt 
+  const timeRemaining = expiresAt
     ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 60000))
     : 0;
 
-  // Transform prescriptions for AI summary
+  // Extract current medications
+  const currentMedications: Array<{ name: string; dosage: string; frequency: string }> = [];
+  prescriptions.forEach((rx: Prescription) => {
+    if (rx.medications && Array.isArray(rx.medications)) {
+      (rx.medications as Array<{ name: string; dosage: string; frequency: string }>).forEach(
+        (med) => {
+          if (typeof med === "object" && med !== null && "name" in med) {
+            currentMedications.push(med);
+          }
+        }
+      );
+    }
+  });
+
   const transformedPrescriptions = prescriptions.map((rx: Prescription) => ({
     id: rx.id,
     title: rx.title,
     medications: rx.medications as Array<{ name: string; dosage: string; frequency: string }> | null,
     is_verified: rx.is_verified,
-    created_at: rx.created_at
+    created_at: rx.created_at,
   }));
 
   return (
@@ -163,7 +174,9 @@ const DoctorAccess = () => {
         <div className="flex items-center justify-between py-2 px-4 bg-primary/10 rounded-xl">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">Doctor Access Mode</span>
+            <span className="text-sm font-medium text-primary">
+              Doctor Access Mode
+            </span>
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
@@ -181,10 +194,24 @@ const DoctorAccess = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              {patient.age ? `${patient.age}y` : "Age N/A"} • {patient.gender || "Gender N/A"} • Blood: {patient.blood_group || "N/A"}
+              {patient.age ? `${patient.age}y` : "Age N/A"} •{" "}
+              {patient.gender || "Gender N/A"} • Blood:{" "}
+              {patient.blood_group || "N/A"}
             </p>
           </CardContent>
         </Card>
+
+        {/* Prescription Drift Analysis — contextual advisory */}
+        <PrescriptionDriftAnalysis
+          medications={currentMedications}
+          medicalHistory={medicalRecords}
+          wearableReadings={wearableReadings}
+          allergies={patient.allergies || []}
+          chronicConditions={patient.chronic_conditions || []}
+        />
+
+        {/* Wearable Data — contextual safety signal */}
+        <WearableDataCard patientId={patientId || undefined} />
 
         {/* Tabs for different views */}
         <Tabs defaultValue="summary" className="w-full">
@@ -204,14 +231,14 @@ const DoctorAccess = () => {
           </TabsList>
 
           <TabsContent value="summary" className="mt-4">
-            <PatientAISummary 
-              patient={patient} 
+            <PatientAISummary
+              patient={patient}
               prescriptions={transformedPrescriptions}
             />
           </TabsContent>
 
           <TabsContent value="history" className="mt-4 space-y-4">
-            {/* Allergies - Read Only */}
+            {/* Allergies */}
             {patient.allergies && patient.allergies.length > 0 && (
               <Card className="healthcare-card border-destructive/30">
                 <CardHeader className="pb-2">
@@ -223,7 +250,7 @@ const DoctorAccess = () => {
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {patient.allergies.map((allergy, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="px-3 py-1 bg-destructive/10 text-destructive rounded-full text-sm"
                       >
@@ -235,7 +262,7 @@ const DoctorAccess = () => {
               </Card>
             )}
 
-            {/* Chronic Conditions - Read Only */}
+            {/* Chronic Conditions */}
             {patient.chronic_conditions && patient.chronic_conditions.length > 0 && (
               <Card className="healthcare-card border-warning/30">
                 <CardHeader className="pb-2">
@@ -246,7 +273,7 @@ const DoctorAccess = () => {
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {patient.chronic_conditions.map((condition, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="px-3 py-1 bg-warning/10 text-warning rounded-full text-sm"
                       >
@@ -261,7 +288,9 @@ const DoctorAccess = () => {
             {/* Medical Records */}
             <Card className="healthcare-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Medical History (Read-Only)</CardTitle>
+                <CardTitle className="text-sm">
+                  Medical History (Read-Only)
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {medicalRecords.length === 0 ? (
@@ -271,10 +300,7 @@ const DoctorAccess = () => {
                 ) : (
                   <div className="space-y-3">
                     {medicalRecords.map((record) => (
-                      <div 
-                        key={record.id}
-                        className="p-3 bg-muted/50 rounded-xl"
-                      >
+                      <div key={record.id} className="p-3 bg-muted/50 rounded-xl">
                         <div className="flex items-center justify-between">
                           <p className="font-medium text-sm">{record.title}</p>
                           <span className="text-xs text-muted-foreground">
@@ -318,7 +344,7 @@ const DoctorAccess = () => {
                 ) : (
                   <div className="space-y-3">
                     {prescriptions.map((rx: Prescription) => (
-                      <div 
+                      <div
                         key={rx.id}
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-xl"
                       >
@@ -345,21 +371,9 @@ const DoctorAccess = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Doctor Permissions Notice */}
-        <div className="bg-muted/50 rounded-xl p-4">
-          <p className="text-xs text-muted-foreground text-center">
-            <strong>Doctor Access:</strong> View patient information and add new prescriptions. 
-            You cannot edit existing records or patient profile data.
-          </p>
-        </div>
-
-        {/* AI Disclaimer */}
-        <div className="bg-primary/5 rounded-xl p-4 border border-primary/20">
-          <p className="text-xs text-center">
-            <strong>AI Disclaimer:</strong> AI insights are assistive only. 
-            Final medical decisions remain with qualified healthcare professionals.
-          </p>
-        </div>
+        {/* Permissions & Disclaimer */}
+        <SafetyDisclaimer variant="advisory" />
+        <SafetyDisclaimer variant="ai" />
       </div>
 
       <ManualPrescriptionDialog
