@@ -31,7 +31,7 @@ const Index = () => {
             <img 
               src={logo} 
               alt="Dr.One Logo" 
-              className="w-48 h-48 mx-auto animate-scale-in drop-shadow-xl"
+              className="w-48 h-48 mx-auto animate-float animate-pulse-glow drop-shadow-xl"
             />
           </div>
 
