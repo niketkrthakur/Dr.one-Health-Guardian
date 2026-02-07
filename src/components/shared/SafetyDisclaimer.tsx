@@ -34,8 +34,8 @@ const disclaimerConfig: Record<DisclaimerVariant, {
   },
   wearable: {
     icon: Shield,
-    title: "Contextual Safety Signal",
-    message: "Wearable-derived data is displayed as a contextual safety signal only. It must not be used for disease diagnosis, prediction, or autonomous alerts. All insights are advisory and human-verifiable.",
+    title: "Wearable-Derived Data Disclaimer",
+    message: "Wearable data is provided for contextual reference only and does not constitute medical diagnosis or treatment advice. It must not be used for disease prediction or autonomous alerts. All insights are advisory and human-verifiable.",
     style: "border-warning/30 bg-warning/5",
   },
   ai: {
