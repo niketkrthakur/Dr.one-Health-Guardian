@@ -4,7 +4,8 @@ import AppLayout from "@/components/layout/AppLayout";
 import PatientCard from "@/components/dashboard/PatientCard";
 import QuickAccessCard from "@/components/dashboard/QuickAccessCard";
 import AlertBanner from "@/components/dashboard/AlertBanner";
-import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut, Search } from "lucide-react";
+import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut, Search, Watch } from "lucide-react";
+import WearableDataCard from "@/components/wearable/WearableDataCard";
 import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -133,6 +134,9 @@ const Dashboard = () => {
             message={profile.allergies.join(", ")}
           />
         )}
+
+        {/* Wearable Device Integration */}
+        <WearableDataCard />
 
         {/* Quick Actions */}
         <div className="space-y-3">
