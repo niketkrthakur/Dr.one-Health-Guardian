@@ -1,12 +1,12 @@
-import { Home, User, FileText, Brain, Clock } from "lucide-react";
+import { Home, User, FileText, Watch, Clock } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: FileText, label: "Records", path: "/records" },
+  { icon: Watch, label: "Wearable", path: "/wearable" },
   { icon: Clock, label: "Reminders", path: "/reminders" },
-  { icon: Brain, label: "AI", path: "/ai-summary" },
   { icon: User, label: "Profile", path: "/profile" },
 ];
 
