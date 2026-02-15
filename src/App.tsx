@@ -17,6 +17,7 @@ import AISummary from "./pages/AISummary";
 import EmergencyQR from "./pages/EmergencyQR";
 import DoctorAccess from "./pages/DoctorAccess";
 import DoctorFinder from "./pages/DoctorFinder";
+import WearableDevices from "./pages/WearableDevices";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,6 +88,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="patient">
                   <Reminders />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/wearable" 
+              element={
+                <ProtectedRoute requiredRole="patient">
+                  <WearableDevices />
                 </ProtectedRoute>
               } 
             />
