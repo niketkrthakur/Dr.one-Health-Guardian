@@ -18,6 +18,7 @@ import EmergencyQR from "./pages/EmergencyQR";
 import DoctorAccess from "./pages/DoctorAccess";
 import DoctorFinder from "./pages/DoctorFinder";
 import WearableDevices from "./pages/WearableDevices";
+import Timeline from "./pages/Timeline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="patient">
                   <WearableDevices />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/timeline" 
+              element={
+                <ProtectedRoute requiredRole="patient">
+                  <Timeline />
                 </ProtectedRoute>
               } 
             />
