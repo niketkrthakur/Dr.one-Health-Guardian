@@ -4,7 +4,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import PatientCard from "@/components/dashboard/PatientCard";
 import QuickAccessCard from "@/components/dashboard/QuickAccessCard";
 import AlertBanner from "@/components/dashboard/AlertBanner";
-import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut, Search, Watch } from "lucide-react";
+import { User, FileText, Pill, Brain, QrCode, Camera, Stethoscope, LogOut, Search, Watch, Calendar } from "lucide-react";
 import WearableDataCard from "@/components/wearable/WearableDataCard";
 import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import { Button } from "@/components/ui/button";
@@ -194,6 +194,13 @@ const Dashboard = () => {
               title="Find a Doctor"
               description="Healthcare navigation by condition"
               path="/doctor-finder"
+            />
+            
+            <QuickAccessCard
+              icon={Calendar}
+              title="Health Timeline"
+              description="Unified chronological health view"
+              path="/timeline"
             />
           </div>
         </div>

@@ -2,21 +2,26 @@ import { useState } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import SafetyDisclaimer from "@/components/shared/SafetyDisclaimer";
 import SpecialtyGrid from "@/components/doctor-finder/SpecialtyGrid";
-import DoctorResultsList from "@/components/doctor-finder/DoctorResultsList";
+import DoctorResultsList, { DoctorResult } from "@/components/doctor-finder/DoctorResultsList";
 import NoDataSourceBanner from "@/components/doctor-finder/NoDataSourceBanner";
 import { Button } from "@/components/ui/button";
 import { Search, Navigation } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const DoctorFinder = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchCompleted, setSearchCompleted] = useState(false);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [results, setResults] = useState<DoctorResult[]>([]);
+  const [apiMissing, setApiMissing] = useState(false);
 
   const handleSpecialtySelect = (specialtyId: string) => {
     setSelectedSpecialty(specialtyId);
     setSearchCompleted(false);
+    setResults([]);
+    setApiMissing(false);
   };
 
   const handleSearch = async () => {
@@ -26,32 +31,51 @@ const DoctorFinder = () => {
     }
 
     setSearching(true);
+    setApiMissing(false);
 
-    // Request geolocation
+    const doSearch = async (lat: number, lng: number) => {
+      try {
+        const { data, error } = await supabase.functions.invoke("search-doctors", {
+          body: { lat, lng, specialty: selectedSpecialty, radius: 5000 },
+        });
+
+        if (error) {
+          console.error("Edge function error:", error);
+          setResults([]);
+          setApiMissing(true);
+        } else if (data?.error?.includes("not configured")) {
+          setResults([]);
+          setApiMissing(true);
+        } else {
+          setResults(data?.results || []);
+          if (data?.results?.length === 0) {
+            setApiMissing(!data?.error ? false : true);
+          }
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        setResults([]);
+        setApiMissing(true);
+      }
+      setSearchCompleted(true);
+      setSearching(false);
+    };
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        () => {
+        (pos) => {
           setLocationGranted(true);
-          // No real data source connected — show empty state after brief delay
-          setTimeout(() => {
-            setSearchCompleted(true);
-            setSearching(false);
-          }, 600);
+          doSearch(pos.coords.latitude, pos.coords.longitude);
         },
         () => {
           setLocationGranted(false);
-          setTimeout(() => {
-            setSearchCompleted(true);
-            setSearching(false);
-            toast.info("Location access denied. Results may be limited.");
-          }, 600);
+          toast.info("Location access denied. Using default location.");
+          // Fallback to a default (0,0 will return no results gracefully)
+          doSearch(0, 0);
         }
       );
     } else {
-      setTimeout(() => {
-        setSearchCompleted(true);
-        setSearching(false);
-      }, 600);
+      doSearch(0, 0);
     }
   };
 
@@ -98,16 +122,16 @@ const DoctorFinder = () => {
           </Button>
         )}
 
-        {/* Results — currently no real data source connected */}
+        {/* Results */}
         {searchCompleted && (
           <DoctorResultsList
-            results={[]}
+            results={results}
             locationGranted={locationGranted}
           />
         )}
 
-        {/* No Data Source Banner — always shown */}
-        <NoDataSourceBanner />
+        {/* No Data Source Banner — shown if API key missing */}
+        {apiMissing && <NoDataSourceBanner />}
 
         {/* Navigation Disclaimer */}
         <SafetyDisclaimer variant="navigation" />
